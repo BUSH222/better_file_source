@@ -23,6 +23,11 @@ jobs:
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp ; cmake -E make_directory ${{runner.workspace}}/build_module
 
+      - name: Download & Install PothosSDR
+        run: |
+          Invoke-WebRequest -Uri "https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-2020.01.26-vc14-x64.exe" -OutFile ${{runner.workspace}}/pothos.exe
+          mkdir "C:/Program Files/PothosSDR" ; 7z x ${{runner.workspace}}/pothos.exe -o"C:/Program Files/PothosSDR/"
+
       - name: Install vcpkg dependencies (SDR++ Core dependencies)
         run: vcpkg install fftw3:x64-windows glfw3:x64-windows portaudio:x64-windows zstd:x64-windows libusb:x64-windows spdlog:x64-windows
 
@@ -35,7 +40,7 @@ jobs:
       - name: Build the better file source module
         working-directory: ${{runner.workspace}}/build_module
         run: |
-          cmake ${{github.workspace}} "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=/O2 /Ob2 /std:c++17 /EHsc"
+          cmake ${{github.workspace}} "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc"
           cmake --build . --config Release
 
       - name: Save Artifact
@@ -79,7 +84,7 @@ jobs:
       - name: Build the better file source module
         working-directory: ${{runner.workspace}}/build_module
         run: |
-          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus -DSDRPP_MODULE_COMPILER_FLAGS="-O3 -std=c++17"
+          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=-O3;-std=c++17"
           make -j3
 
       - name: Save Artifact
@@ -119,7 +124,7 @@ jobs:
       - name: Build the better file source module
         working-directory: ${{runner.workspace}}/build_module
         run: |
-          cmake ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus -DSDRPP_MODULE_COMPILER_FLAGS="-O3 -std=c++17"
+          cmake ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=-O3;-std=c++17"
           make -j3
 
       - name: Save Artifact
