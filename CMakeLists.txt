@@ -7,6 +7,11 @@ file(GLOB SRC "src/*.cpp")
 
 include("${SDRPP_CORE_ROOT}/sdrpp_module.cmake")
 
-target_include_directories(${PROJECT_NAME} PRIVATE "src/")
+# Explicitly append the core and imgui paths here
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    "src/"
+    "${SDRPP_CORE_ROOT}/core/src/"
+    "${SDRPP_CORE_ROOT}/core/src/imgui/"
+)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE volk)
