@@ -23,24 +23,19 @@ jobs:
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp ; cmake -E make_directory ${{runner.workspace}}/build_module
 
-      - name: Download & Install PothosSDR
-        run: |
-          Invoke-WebRequest -Uri "https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-2020.01.26-vc14-x64.exe" -OutFile ${{runner.workspace}}/pothos.exe
-          mkdir "C:/Program Files/PothosSDR" ; 7z x ${{runner.workspace}}/pothos.exe -o"C:/Program Files/PothosSDR/"
-
       - name: Install vcpkg dependencies (SDR++ Core dependencies)
         run: vcpkg install fftw3:x64-windows glfw3:x64-windows portaudio:x64-windows zstd:x64-windows libusb:x64-windows spdlog:x64-windows
 
-      - name: Build SDR++ Core
+      - name: Build SDR++ Core (Minimal)
         working-directory: ${{runner.workspace}}/build_sdrpp
         run: |
-          cmake ${{github.workspace}}/lib/SDRPlusPlus "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+          cmake ${{github.workspace}}/lib/SDRPlusPlus "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DOPT_BUILD_AIRSPY_SOURCE=OFF -DOPT_BUILD_AIRSPYHF_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DOPT_BUILD_HACKRF_SOURCE=OFF -DOPT_BUILD_PLUTOSDR_SOURCE=OFF -DOPT_BUILD_RTL_SDR_SOURCE=OFF -DOPT_BUILD_AUDIO_SINK=OFF
           cmake --build . --config Release --target sdrpp_core
 
       - name: Build the better file source module
         working-directory: ${{runner.workspace}}/build_module
         run: |
-          cmake ${{github.workspace}} "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus
+          cmake ${{github.workspace}} "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=/O2 /Ob2 /std:c++17 /EHsc"
           cmake --build . --config Release
 
       - name: Save Artifact
@@ -75,16 +70,16 @@ jobs:
       - name: Install volk
         run: git clone --recursive https://github.com/gnuradio/volk && cd volk && mkdir build && cd build && cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_BUILD_TYPE=Release .. && make -j3 && sudo make install
 
-      - name: Build SDR++ Core
+      - name: Build SDR++ Core (Minimal)
         working-directory: ${{runner.workspace}}/build_sdrpp
         run: |
-          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 ${{github.workspace}}/lib/SDRPlusPlus
+          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 ${{github.workspace}}/lib/SDRPlusPlus -DOPT_BUILD_AIRSPY_SOURCE=OFF -DOPT_BUILD_AIRSPYHF_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DOPT_BUILD_HACKRF_SOURCE=OFF -DOPT_BUILD_PLUTOSDR_SOURCE=OFF -DOPT_BUILD_RTL_SDR_SOURCE=OFF -DOPT_BUILD_AUDIO_SINK=OFF
           make sdrpp_core -j3
 
       - name: Build the better file source module
         working-directory: ${{runner.workspace}}/build_module
         run: |
-          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus
+          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus -DSDRPP_MODULE_COMPILER_FLAGS="-O3 -std=c++17"
           make -j3
 
       - name: Save Artifact
@@ -115,16 +110,16 @@ jobs:
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp && cmake -E make_directory ${{runner.workspace}}/build_module
 
-      - name: Build SDR++ Core
+      - name: Build SDR++ Core (Minimal)
         working-directory: ${{runner.workspace}}/build_sdrpp
         run: |
-          cmake ${{github.workspace}}/lib/SDRPlusPlus
+          cmake ${{github.workspace}}/lib/SDRPlusPlus -DOPT_BUILD_AIRSPY_SOURCE=OFF -DOPT_BUILD_AIRSPYHF_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DOPT_BUILD_HACKRF_SOURCE=OFF -DOPT_BUILD_PLUTOSDR_SOURCE=OFF -DOPT_BUILD_RTL_SDR_SOURCE=OFF -DOPT_BUILD_AUDIO_SINK=OFF
           make sdrpp_core -j3
 
       - name: Build the better file source module
         working-directory: ${{runner.workspace}}/build_module
         run: |
-          cmake ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus
+          cmake ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus -DSDRPP_MODULE_COMPILER_FLAGS="-O3 -std=c++17"
           make -j3
 
       - name: Save Artifact
