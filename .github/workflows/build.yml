@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          
+
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp ; cmake -E make_directory ${{runner.workspace}}/build_module
 
@@ -52,12 +52,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          
+
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp && cmake -E make_directory ${{runner.workspace}}/build_module
 
       - name: Install dependencies
-        run: brew install pkg-config libusb fftw glfw portaudio zstd spdlog
+        run: brew install pkg-config libusb fftw glfw portaudio zstd spdlog && pip3 install mako --break-system-packages
 
       - name: Install volk
         run: git clone --recursive https://github.com/gnuradio/volk && cd volk && mkdir build && cd build && cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_BUILD_TYPE=Release .. && make -j3 && sudo make install
@@ -90,7 +90,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake git libfftw3-dev libglfw3-dev libvolk2-dev libzstd-dev portaudio19-dev libspdlog-dev
+          sudo apt-get install -y build-essential cmake git libfftw3-dev libglfw3-dev libvolk-dev libzstd-dev portaudio19-dev libspdlog-dev
           
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp && cmake -E make_directory ${{runner.workspace}}/build_module
