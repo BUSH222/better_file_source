@@ -1,0 +1,114 @@
+name: Build Module
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build_windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp ; cmake -E make_directory ${{runner.workspace}}/build_module
+
+      - name: Download & Install PothosSDR
+        run: |
+          Invoke-WebRequest -Uri "https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-2020.01.26-vc14-x64.exe" -OutFile ${{runner.workspace}}/pothos.exe
+          mkdir "C:/Program Files/PothosSDR" ; 7z x ${{runner.workspace}}/pothos.exe -o"C:/Program Files/PothosSDR/"
+
+      - name: Install vcpkg dependencies (SDR++ Core dependencies)
+        run: vcpkg install fftw3:x64-windows glfw3:x64-windows portaudio:x64-windows zstd:x64-windows libusb:x64-windows spdlog:x64-windows
+
+      - name: Build SDR++ Core
+        working-directory: ${{runner.workspace}}/build_sdrpp
+        run: |
+          cmake ${{github.workspace}}/lib/SDRPlusPlus "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+          cmake --build . --config Release --target sdrpp_core
+
+      - name: Build the better file source module
+        working-directory: ${{runner.workspace}}/build_module
+        run: |
+          cmake ${{github.workspace}} "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus
+          cmake --build . --config Release
+
+      - name: Save Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cs8_file_source_windows_x64
+          path: ${{runner.workspace}}/build_module/Release/cs8_file_source.dll
+
+  build_macos_universal:
+    strategy:
+      matrix:
+        os: [macos-15-intel, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp && cmake -E make_directory ${{runner.workspace}}/build_module
+
+      - name: Install dependencies
+        run: brew install pkg-config libusb fftw glfw portaudio zstd spdlog
+
+      - name: Install volk
+        run: git clone --recursive https://github.com/gnuradio/volk && cd volk && mkdir build && cd build && cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_BUILD_TYPE=Release .. && make -j3 && sudo make install
+
+      - name: Build SDR++ Core
+        working-directory: ${{runner.workspace}}/build_sdrpp
+        run: |
+          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 ${{github.workspace}}/lib/SDRPlusPlus
+          make sdrpp_core -j3
+
+      - name: Build the better file source module
+        working-directory: ${{runner.workspace}}/build_module
+        run: |
+          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus
+          make -j3
+
+      - name: Save Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cs8_file_source_${{ matrix.os }}
+          path: ${{runner.workspace}}/build_module/libcs8_file_source.dylib
+
+  build_linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git libfftw3-dev libglfw3-dev libvolk2-dev libzstd-dev portaudio19-dev libspdlog-dev
+          
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp && cmake -E make_directory ${{runner.workspace}}/build_module
+
+      - name: Build SDR++ Core
+        working-directory: ${{runner.workspace}}/build_sdrpp
+        run: |
+          cmake ${{github.workspace}}/lib/SDRPlusPlus
+          make sdrpp_core -j3
+
+      - name: Build the better file source module
+        working-directory: ${{runner.workspace}}/build_module
+        run: |
+          cmake ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus
+          make -j3
+
+      - name: Save Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cs8_file_source_linux_amd64
+          path: ${{runner.workspace}}/build_module/libcs8_file_source.so
