@@ -13,7 +13,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
+          
+      - name: Ensure SDR++ Core is present
+        run: |
+          if (!(Test-Path "lib/SDRPlusPlus/CMakeLists.txt")) {
+            git clone https://github.com/AlexandreRouma/SDRPlusPlus.git lib/SDRPlusPlus
+          }
+          
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp ; cmake -E make_directory ${{runner.workspace}}/build_module
 
@@ -53,6 +59,13 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Ensure SDR++ Core is present
+        run: |
+          if [ ! -f "lib/SDRPlusPlus/CMakeLists.txt" ]; then
+            rm -rf lib/SDRPlusPlus
+            git clone https://github.com/AlexandreRouma/SDRPlusPlus.git lib/SDRPlusPlus
+          fi
+          
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp && cmake -E make_directory ${{runner.workspace}}/build_module
 
@@ -86,6 +99,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Ensure SDR++ Core is present
+        run: |
+          if [ ! -f "lib/SDRPlusPlus/CMakeLists.txt" ]; then
+            rm -rf lib/SDRPlusPlus
+            git clone https://github.com/AlexandreRouma/SDRPlusPlus.git lib/SDRPlusPlus
+          fi
 
       - name: Install Dependencies
         run: |
