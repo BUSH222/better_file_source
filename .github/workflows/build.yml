@@ -36,6 +36,7 @@ jobs:
         run: |
           cmake ${{github.workspace}}/lib/SDRPlusPlus "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DOPT_BUILD_AIRSPY_SOURCE=OFF -DOPT_BUILD_AIRSPYHF_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DOPT_BUILD_HACKRF_SOURCE=OFF -DOPT_BUILD_PLUTOSDR_SOURCE=OFF -DOPT_BUILD_RTL_SDR_SOURCE=OFF -DOPT_BUILD_AUDIO_SINK=OFF
           cmake --build . --config Release --target sdrpp_core
+          make install
 
       - name: Build the better file source module
         working-directory: ${{runner.workspace}}/build_module
@@ -80,6 +81,7 @@ jobs:
         run: |
           cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 ${{github.workspace}}/lib/SDRPlusPlus -DOPT_BUILD_AIRSPY_SOURCE=OFF -DOPT_BUILD_AIRSPYHF_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DOPT_BUILD_HACKRF_SOURCE=OFF -DOPT_BUILD_PLUTOSDR_SOURCE=OFF -DOPT_BUILD_RTL_SDR_SOURCE=OFF -DOPT_BUILD_AUDIO_SINK=OFF
           make sdrpp_core -j3
+          make install
 
       - name: Build the better file source module
         working-directory: ${{runner.workspace}}/build_module
@@ -120,6 +122,7 @@ jobs:
         run: |
           cmake ${{github.workspace}}/lib/SDRPlusPlus -DOPT_BUILD_AIRSPY_SOURCE=OFF -DOPT_BUILD_AIRSPYHF_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DOPT_BUILD_HACKRF_SOURCE=OFF -DOPT_BUILD_PLUTOSDR_SOURCE=OFF -DOPT_BUILD_RTL_SDR_SOURCE=OFF -DOPT_BUILD_AUDIO_SINK=OFF
           make sdrpp_core -j3
+          make install
 
       - name: Build the better file source module
         working-directory: ${{runner.workspace}}/build_module
