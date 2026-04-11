@@ -6,6 +6,7 @@
 #include <signal_path/signal_path.h>
 #include <better_file_reader.h>
 #include <core.h>
+#include <gui/style.h>
 #include <gui/widgets/file_select.h>
 #include <filesystem>
 #include <regex>
