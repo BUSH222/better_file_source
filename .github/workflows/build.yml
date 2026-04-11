@@ -33,7 +33,10 @@ jobs:
           Invoke-WebRequest -Uri "https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-2020.01.26-vc14-x64.exe" -OutFile "$env:RUNNER_WORKSPACE/pothos.exe"
           New-Item -ItemType Directory -Path "C:/Program Files/PothosSDR" -Force | Out-Null
           7z x "$env:RUNNER_WORKSPACE/pothos.exe" "-oC:/Program Files/PothosSDR/" | Out-Null
-          vcpkg install fftw3:x64-windows glfw3:x64-windows zstd:x64-windows spdlog:x64-windows volk:x64-windows
+          vcpkg install fftw3:x64-windows glfw3:x64-windows zstd:x64-windows spdlog:x64-windows
+          if (!(Test-Path "C:/Program Files/PothosSDR/include/volk/volk.h")) {
+            throw "GNU Radio VOLK headers were not found under C:/Program Files/PothosSDR/include/volk"
+          }
 
       - name: Build SDR++ Core (Minimal)
         working-directory: ${{ runner.workspace }}/build_sdrpp

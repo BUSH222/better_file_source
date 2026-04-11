@@ -14,4 +14,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     "${SDRPP_CORE_ROOT}/core/src/imgui/"
 )
 
+# On Windows CI, SDR++ core headers pull GNU Radio VOLK headers from PothosSDR.
+if (MSVC)
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        "C:/Program Files/PothosSDR/include"
+        "C:/vcpkg/installed/x64-windows/include"
+    )
+endif ()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE volk)
