@@ -14,6 +14,7 @@
 #include <stdexcept>
 
 #define CONCAT(a, b) ((std::string(a) + b).c_str())
+#define MIN_SAMPLE_RATE 8000.0f
 
 SDRPP_MOD_INFO{
     /* Name:            */ "better_file_source",
@@ -27,7 +28,7 @@ ConfigManager config;
 
 class BetterFileSourceModule : public ModuleManager::Instance {
 public:
-    BetterFileSourceModule(std::string name) : fileSelect("", { "CS8 IQ Files (*.cs8)", "*.cs8", "Raw Files (*.raw)", "*.raw", "All Files", "*" }) {
+    BetterFileSourceModule(std::string name) : fileSelect("", { "CS8 IQ Files (*.cs8)", "*.cs8", "CS8 IQ Files (*.c8)", "*.c8", "Raw Files (*.raw)", "*.raw", "All Files", "*" }) {
         this->name = name;
 
         if (core::args["server"].b()) { return; }
@@ -35,7 +36,7 @@ public:
         config.acquire();
         fileSelect.setPath(config.conf["path"], true);
         if (config.conf.contains("sampleRate")) {
-            sampleRate = config.conf["sampleRate"];
+            sampleRate = std::max((float)config.conf["sampleRate"], MIN_SAMPLE_RATE);
         }
         config.release();
 
@@ -95,7 +96,7 @@ private:
         if (_this->running) { return; }
         if (_this->reader == NULL) { return; }
         _this->running = true;
-        _this->workerThread = _this->float32Mode ? std::thread(floatWorker, _this) : std::thread(worker, _this);
+        _this->workerThread = std::thread(worker, _this);
         flog::info("BetterFileSourceModule '{0}': Start!", _this->name);
     }
 
@@ -122,6 +123,8 @@ private:
         BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
 
         if (ImGui::InputFloat("Sample Rate", &_this->sampleRate, 0.0f, 0.0f, "%.0f")) {
+            // Enforce minimum sample rate of 8000 Hz
+            _this->sampleRate = std::max(_this->sampleRate, MIN_SAMPLE_RATE);
             config.acquire();
             config.conf["sampleRate"] = _this->sampleRate;
             config.release(true);
@@ -142,6 +145,8 @@ private:
                     if (!_this->reader->isValid()) {
                         throw std::runtime_error("Could not open file");
                     }
+                    // Enforce minimum sample rate of 8000 Hz
+                    _this->sampleRate = std::max(_this->sampleRate, MIN_SAMPLE_RATE);
                     _this->reader->setSampleRate(_this->sampleRate);
                     core::setInputSampleRate(_this->sampleRate);
                     std::string filename = std::filesystem::path(_this->fileSelect.path).filename().string();
@@ -158,32 +163,17 @@ private:
             }
         }
 
-        ImGui::Checkbox("Float32 Mode##_better_file_source", &_this->float32Mode);
     }
 
     static void worker(void* ctx) {
         BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
-        double sampleRate = std::max(_this->sampleRate, 1.0f);
+        double sampleRate = std::max(_this->sampleRate, MIN_SAMPLE_RATE);
         int blockSize = std::min((int)(sampleRate / 200.0f), (int)STREAM_BUFFER_SIZE);
         int8_t* inBuf = new int8_t[blockSize * 2];
 
         while (true) {
             _this->reader->readSamples(inBuf, blockSize * 2 * sizeof(int8_t));
             volk_8i_s32f_convert_32f((float*)_this->stream.writeBuf, inBuf, 128.0f, blockSize * 2);
-            if (!_this->stream.swap(blockSize)) { break; };
-        }
-
-        delete[] inBuf;
-    }
-
-    static void floatWorker(void* ctx) {
-        BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
-        double sampleRate = std::max(_this->sampleRate, 1.0f);
-        int blockSize = std::min((int)(sampleRate / 200.0f), (int)STREAM_BUFFER_SIZE);
-        dsp::complex_t* inBuf = new dsp::complex_t[blockSize];
-
-        while (true) {
-            _this->reader->readSamples(_this->stream.writeBuf, blockSize * sizeof(dsp::complex_t));
             if (!_this->stream.swap(blockSize)) { break; };
         }
 
@@ -210,8 +200,6 @@ private:
     std::thread workerThread;
 
     double centerFreq = 100000000;
-
-    bool float32Mode = false;
 };
 
 MOD_EXPORT void _INIT_() {
