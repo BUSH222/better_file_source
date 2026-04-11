@@ -105,8 +105,8 @@ jobs:
       - name: Save Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cs8_file_source_windows_amd64
-          path: ${{ runner.workspace }}/build_module/Release/cs8_file_source.dll
+          name: better_file_source_windows_amd64
+          path: ${{ runner.workspace }}/build_module/Release/better_file_source.dll
   build_macos_universal:
     strategy:
       matrix:
@@ -151,8 +151,8 @@ jobs:
       - name: Save Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cs8_file_source_${{ matrix.os }}
-          path: ${{runner.workspace}}/build_module/cs8_file_source.dylib
+          name: better_file_source_${{ matrix.os }}
+          path: ${{runner.workspace}}/build_module/better_file_source.dylib
 
   build_linux:
     runs-on: ubuntu-latest
@@ -192,5 +192,5 @@ jobs:
       - name: Save Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cs8_file_source_linux_amd64
-          path: ${{runner.workspace}}/build_module/cs8_file_source.so
+          name: better_file_source_linux_amd64
+          path: ${{runner.workspace}}/build_module/better_file_source.so

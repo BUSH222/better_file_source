@@ -4,7 +4,7 @@
 #include <module.h>
 #include <gui/gui.h>
 #include <signal_path/signal_path.h>
-#include <cs8reader.h>
+#include <better_file_reader.h>
 #include <core.h>
 #include <gui/widgets/file_select.h>
 #include <filesystem>
@@ -16,8 +16,8 @@
 #define CONCAT(a, b) ((std::string(a) + b).c_str())
 
 SDRPP_MOD_INFO{
-    /* Name:            */ "cs8_file_source",
-    /* Description:     */ "CS8 file source module for SDR++",
+    /* Name:            */ "better_file_source",
+    /* Description:     */ "Better file source module for SDR++",
     /* Author:          */ "BUSH222",
     /* Version:         */ 0, 1, 1,
     /* Max instances    */ 1
@@ -25,9 +25,9 @@ SDRPP_MOD_INFO{
 
 ConfigManager config;
 
-class CS8FileSourceModule : public ModuleManager::Instance {
+class BetterFileSourceModule : public ModuleManager::Instance {
 public:
-    CS8FileSourceModule(std::string name) : fileSelect("", { "CS8 IQ Files (*.cs8)", "*.cs8", "Raw Files (*.raw)", "*.raw", "All Files", "*" }) {
+    BetterFileSourceModule(std::string name) : fileSelect("", { "CS8 IQ Files (*.cs8)", "*.cs8", "Raw Files (*.raw)", "*.raw", "All Files", "*" }) {
         this->name = name;
 
         if (core::args["server"].b()) { return; }
@@ -47,12 +47,12 @@ public:
         handler.stopHandler = stop;
         handler.tuneHandler = tune;
         handler.stream = &stream;
-        sigpath::sourceManager.registerSource("CS8 File", &handler);
+        sigpath::sourceManager.registerSource("Better File", &handler);
     }
 
-    ~CS8FileSourceModule() {
+    ~BetterFileSourceModule() {
         stop(this);
-        sigpath::sourceManager.unregisterSource("CS8 File");
+        sigpath::sourceManager.unregisterSource("Better File");
     }
 
     void postInit() {}
@@ -71,7 +71,7 @@ public:
 
 private:
     static void menuSelected(void* ctx) {
-        CS8FileSourceModule* _this = (CS8FileSourceModule*)ctx;
+        BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
         core::setInputSampleRate(_this->sampleRate);
         tuner::tune(tuner::TUNER_MODE_IQ_ONLY, "", _this->centerFreq);
         sigpath::iqFrontEnd.setBuffering(false);
@@ -79,28 +79,28 @@ private:
         //gui::freqSelect.minFreq = _this->centerFreq - (_this->sampleRate/2);
         //gui::freqSelect.maxFreq = _this->centerFreq + (_this->sampleRate/2);
         //gui::freqSelect.limitFreq = true;
-        flog::info("CS8FileSourceModule '{0}': Menu Select!", _this->name);
+        flog::info("BetterFileSourceModule '{0}': Menu Select!", _this->name);
     }
 
     static void menuDeselected(void* ctx) {
-        CS8FileSourceModule* _this = (CS8FileSourceModule*)ctx;
+        BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
         sigpath::iqFrontEnd.setBuffering(true);
         //gui::freqSelect.limitFreq = false;
         gui::waterfall.centerFrequencyLocked = false;
-        flog::info("CS8FileSourceModule '{0}': Menu Deselect!", _this->name);
+        flog::info("BetterFileSourceModule '{0}': Menu Deselect!", _this->name);
     }
 
     static void start(void* ctx) {
-        CS8FileSourceModule* _this = (CS8FileSourceModule*)ctx;
+        BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
         if (_this->running) { return; }
         if (_this->reader == NULL) { return; }
         _this->running = true;
         _this->workerThread = _this->float32Mode ? std::thread(floatWorker, _this) : std::thread(worker, _this);
-        flog::info("CS8FileSourceModule '{0}': Start!", _this->name);
+        flog::info("BetterFileSourceModule '{0}': Start!", _this->name);
     }
 
     static void stop(void* ctx) {
-        CS8FileSourceModule* _this = (CS8FileSourceModule*)ctx;
+        BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
         if (!_this->running) { return; }
         if (_this->reader == NULL) { return; }
         _this->stream.stopWriter();
@@ -110,16 +110,16 @@ private:
         _this->stream.clearWriteStop();
         _this->running = false;
         _this->reader->rewind();
-        flog::info("CS8FileSourceModule '{0}': Stop!", _this->name);
+        flog::info("BetterFileSourceModule '{0}': Stop!", _this->name);
     }
 
     static void tune(double freq, void* ctx) {
-        CS8FileSourceModule* _this = (CS8FileSourceModule*)ctx;
-        flog::info("CS8FileSourceModule '{0}': Tune: {1}!", _this->name, freq);
+        BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
+        flog::info("BetterFileSourceModule '{0}': Tune: {1}!", _this->name, freq);
     }
 
     static void menuHandler(void* ctx) {
-        CS8FileSourceModule* _this = (CS8FileSourceModule*)ctx;
+        BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
 
         if (ImGui::InputFloat("Sample Rate", &_this->sampleRate, 0.0f, 0.0f, "%.0f")) {
             config.acquire();
@@ -138,7 +138,7 @@ private:
                     delete _this->reader;
                 }
                 try {
-                    _this->reader = new CS8Reader(_this->fileSelect.path);
+                    _this->reader = new BetterFileReader(_this->fileSelect.path);
                     if (!_this->reader->isValid()) {
                         throw std::runtime_error("Could not open file");
                     }
@@ -158,11 +158,11 @@ private:
             }
         }
 
-        ImGui::Checkbox("Float32 Mode##_cs8_file_source", &_this->float32Mode);
+        ImGui::Checkbox("Float32 Mode##_better_file_source", &_this->float32Mode);
     }
 
     static void worker(void* ctx) {
-        CS8FileSourceModule* _this = (CS8FileSourceModule*)ctx;
+        BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
         double sampleRate = std::max(_this->sampleRate, 1.0f);
         int blockSize = std::min((int)(sampleRate / 200.0f), (int)STREAM_BUFFER_SIZE);
         int8_t* inBuf = new int8_t[blockSize * 2];
@@ -177,7 +177,7 @@ private:
     }
 
     static void floatWorker(void* ctx) {
-        CS8FileSourceModule* _this = (CS8FileSourceModule*)ctx;
+        BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
         double sampleRate = std::max(_this->sampleRate, 1.0f);
         int blockSize = std::min((int)(sampleRate / 200.0f), (int)STREAM_BUFFER_SIZE);
         dsp::complex_t* inBuf = new dsp::complex_t[blockSize];
@@ -203,7 +203,7 @@ private:
     std::string name;
     dsp::stream<dsp::complex_t> stream;
     SourceManager::SourceHandler handler;
-    CS8Reader* reader = NULL;
+    BetterFileReader* reader = NULL;
     bool running = false;
     bool enabled = true;
     float sampleRate = 1000000;
@@ -218,17 +218,17 @@ MOD_EXPORT void _INIT_() {
     json def = json({});
     def["path"] = "";
     def["sampleRate"] = 1000000.0f;
-    config.setPath(core::args["root"].s() + "/cs8_file_source_config.json");
+    config.setPath(core::args["root"].s() + "/better_file_source_config.json");
     config.load(def);
     config.enableAutoSave();
 }
 
 MOD_EXPORT void* _CREATE_INSTANCE_(std::string name) {
-    return new CS8FileSourceModule(name);
+    return new BetterFileSourceModule(name);
 }
 
 MOD_EXPORT void _DELETE_INSTANCE_(void* instance) {
-    delete (CS8FileSourceModule*)instance;
+    delete (BetterFileSourceModule*)instance;
 }
 
 MOD_EXPORT void _END_() {

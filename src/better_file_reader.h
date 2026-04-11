@@ -3,9 +3,9 @@
 #include <string>
 #include <fstream>
 
-class CS8Reader {
+class BetterFileReader {
 public:
-    CS8Reader(std::string path) {
+    BetterFileReader(std::string path) {
         file = std::ifstream(path.c_str(), std::ios::binary);
         valid = file.good();
     }

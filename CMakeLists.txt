@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(cs8_file_source)
+project(better_file_source)
 
 set(SDRPP_CORE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/lib/SDRPlusPlus" CACHE PATH "path to sdrpp core")
 set(SDRPP_CORE_LIB_DIR "" CACHE PATH "path to the built sdrpp_core import library directory")
