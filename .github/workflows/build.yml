@@ -45,12 +45,30 @@ jobs:
 
       - name: Build the better file source module
         shell: pwsh
-        working-directory: ${{runner.workspace}}/build_module
+        working-directory: ${{ runner.workspace }}/build_module
         run: |
-          $flags = '/O2;/Ob2;/std:c++17;/EHsc;/I"C:/vcpkg/installed/x64-windows/include";/I"C:/Program Files/PothosSDR/include";/I"' + "$env:GITHUB_WORKSPACE/lib/SDRPlusPlus/core/src/imgui" + '"'
-          cmake $env:GITHUB_WORKSPACE "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DSDRPP_CORE_ROOT=$env:GITHUB_WORKSPACE/lib/SDRPlusPlus" "-DSDRPP_MODULE_COMPILER_FLAGS=$flags"
-          cmake --build . --config Release --verbose
+          $coreCandidates = @(
+            "$env:RUNNER_WORKSPACE\build_sdrpp\core\Release",
+            "$env:RUNNER_WORKSPACE\build_sdrpp\core\x64\Release",
+            "$env:RUNNER_WORKSPACE\build_sdrpp\Release",
+            "$env:RUNNER_WORKSPACE\build_sdrpp\x64\Release"
+          )
 
+          $coreLibDir = $coreCandidates | Where-Object { Test-Path (Join-Path $_ "sdrpp_core.lib") } | Select-Object -First 1
+          if (-not $coreLibDir) {
+            Write-Error "sdrpp_core.lib not found in expected build_sdrpp output folders."
+            Get-ChildItem "$env:RUNNER_WORKSPACE\build_sdrpp" -Recurse -Filter sdrpp_core.lib | ForEach-Object { $_.FullName }
+            exit 1
+          }
+
+          $env:LIB = "$coreLibDir;C:\vcpkg\installed\x64-windows\lib;$env:LIB"
+
+          cmake $env:GITHUB_WORKSPACE `
+            "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+            "-DSDRPP_CORE_ROOT=$env:GITHUB_WORKSPACE/lib/SDRPlusPlus" `
+            "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc"
+
+          cmake --build . --config Release --verbose
       - name: Save Artifact
         uses: actions/upload-artifact@v4
         with:
