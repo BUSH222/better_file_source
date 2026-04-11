@@ -69,11 +69,14 @@ jobs:
         run: |
           # Needed so linker can resolve both sdrpp_core.lib and volk.lib
           $env:LIB="${{ runner.workspace }}\build_sdrpp\core\Release;C:\Program Files\PothosSDR\lib;$env:LIB"
+          # Needed so headers pulled in by SDR++ core are visible to module compilation.
+          $env:INCLUDE="C:\vcpkg\installed\x64-windows\include;C:\Program Files\PothosSDR\include;$env:INCLUDE"
 
           cmake -A x64 `
             -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake `
+            -DCMAKE_PREFIX_PATH=C:/vcpkg/installed/x64-windows `
             -DSDRPP_CORE_ROOT=${{ github.workspace }}/lib/SDRPlusPlus `
-            "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc;/I${{ github.workspace }}/lib/SDRPlusPlus/core/src;/I${{ github.workspace }}/lib/SDRPlusPlus/core/src/imgui" `
+            "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc;/IC:/vcpkg/installed/x64-windows/include;/I${{ github.workspace }}/lib/SDRPlusPlus/core/src;/I${{ github.workspace }}/lib/SDRPlusPlus/core/src/imgui" `
             ${{ github.workspace }}
 
           cmake --build . --config Release --parallel 3
