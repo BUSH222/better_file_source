@@ -8,6 +8,7 @@ on:
 
 jobs:
   build_windows:
+    if: ${{ false }}  # takes too long for now ill turn back on later
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

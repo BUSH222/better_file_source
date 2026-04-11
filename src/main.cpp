@@ -77,16 +77,12 @@ private:
         tuner::tune(tuner::TUNER_MODE_IQ_ONLY, "", _this->centerFreq);
         sigpath::iqFrontEnd.setBuffering(false);
         gui::waterfall.centerFrequencyLocked = true;
-        //gui::freqSelect.minFreq = _this->centerFreq - (_this->sampleRate/2);
-        //gui::freqSelect.maxFreq = _this->centerFreq + (_this->sampleRate/2);
-        //gui::freqSelect.limitFreq = true;
         flog::info("BetterFileSourceModule '{0}': Menu Select!", _this->name);
     }
 
     static void menuDeselected(void* ctx) {
         BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
         sigpath::iqFrontEnd.setBuffering(true);
-        //gui::freqSelect.limitFreq = false;
         gui::waterfall.centerFrequencyLocked = false;
         flog::info("BetterFileSourceModule '{0}': Menu Deselect!", _this->name);
     }
@@ -122,8 +118,11 @@ private:
     static void menuHandler(void* ctx) {
         BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
 
-        if (ImGui::InputFloat("Sample Rate", &_this->sampleRate, 0.0f, 0.0f, "%.0f")) {
-            // Enforce minimum sample rate of 8000 Hz
+        float menuWidth = ImGui::GetContentRegionAvail().x;
+
+        ImGui::LeftLabel("Sample Rate");
+        ImGui::SetNextItemWidth(menuWidth - ImGui::GetCursorPosX());
+        if (ImGui::InputFloat(("##_sample_rate_" + _this->name).c_str(), &_this->sampleRate, 1.0f, 100.0f, "%.0f")) {
             _this->sampleRate = std::max(_this->sampleRate, MIN_SAMPLE_RATE);
             config.acquire();
             config.conf["sampleRate"] = _this->sampleRate;
