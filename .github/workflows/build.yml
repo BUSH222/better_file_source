@@ -9,72 +9,80 @@ on:
 jobs:
   build_windows:
     runs-on: windows-latest
-    env:
-      CMAKE_INCLUDE_PATH: C:/vcpkg/installed/x64-windows/include
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          
+
       - name: Ensure SDR++ Core is present
+        shell: pwsh
         run: |
           if (!(Test-Path "lib/SDRPlusPlus/CMakeLists.txt")) {
+            Remove-Item -Recurse -Force lib/SDRPlusPlus -ErrorAction SilentlyContinue
             git clone https://github.com/AlexandreRouma/SDRPlusPlus.git lib/SDRPlusPlus
           }
-          
+
       - name: Create Build Environment
-        run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp ; cmake -E make_directory ${{runner.workspace}}/build_module
-
-      - name: Download & Install PothosSDR
         run: |
-          Invoke-WebRequest -Uri "https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-2020.01.26-vc14-x64.exe" -OutFile ${{runner.workspace}}/pothos.exe
-          mkdir "C:/Program Files/PothosSDR" ; 7z x ${{runner.workspace}}/pothos.exe -o"C:/Program Files/PothosSDR/"
+          cmake -E make_directory ${{ runner.workspace }}/build_sdrpp
+          cmake -E make_directory ${{ runner.workspace }}/build_module
 
-      - name: Install vcpkg dependencies (SDR++ Core dependencies)
-        run: vcpkg install fftw3:x64-windows glfw3:x64-windows portaudio:x64-windows zstd:x64-windows libusb:x64-windows spdlog:x64-windows
+      - name: Install minimal Windows dependencies
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-2020.01.26-vc14-x64.exe" -OutFile "$env:RUNNER_WORKSPACE/pothos.exe"
+          New-Item -ItemType Directory -Path "C:/Program Files/PothosSDR" -Force | Out-Null
+          7z x "$env:RUNNER_WORKSPACE/pothos.exe" "-oC:/Program Files/PothosSDR/" | Out-Null
+          vcpkg install fftw3:x64-windows glfw3:x64-windows zstd:x64-windows spdlog:x64-windows
 
       - name: Build SDR++ Core (Minimal)
-        working-directory: ${{runner.workspace}}/build_sdrpp
-        run: |
-          cmake ${{github.workspace}}/lib/SDRPlusPlus "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DOPT_BUILD_AIRSPY_SOURCE=OFF -DOPT_BUILD_AIRSPYHF_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DOPT_BUILD_BLADERF_SOURCE=OFF -DOPT_BUILD_FILE_SOURCE=OFF -DOPT_BUILD_FOBOSSDR_SOURCE=OFF -DOPT_BUILD_HACKRF_SOURCE=OFF -DOPT_BUILD_HAROGIC_SOURCE=OFF -DOPT_BUILD_HERMES_SOURCE=OFF -DOPT_BUILD_KCSDR_SOURCE=OFF -DOPT_BUILD_LIMESDR_SOURCE=OFF -DOPT_BUILD_NETWORK_SOURCE=OFF -DOPT_BUILD_PERSEUS_SOURCE=OFF -DOPT_BUILD_PLUTOSDR_SOURCE=OFF -DOPT_BUILD_RFNM_SOURCE=OFF -DOPT_BUILD_RFSPACE_SOURCE=OFF -DOPT_BUILD_RTL_SDR_SOURCE=OFF -DOPT_BUILD_RTL_TCP_SOURCE=OFF -DOPT_BUILD_SDRPLAY_SOURCE=OFF -DOPT_BUILD_SDRPP_SERVER_SOURCE=OFF -DOPT_BUILD_SOAPY_SOURCE=OFF -DOPT_BUILD_SPECTRAN_SOURCE=OFF -DOPT_BUILD_SPECTRAN_HTTP_SOURCE=OFF -DOPT_BUILD_SPYSERVER_SOURCE=OFF -DOPT_BUILD_USRP_SOURCE=OFF -DOPT_BUILD_ANDROID_AUDIO_SINK=OFF -DOPT_BUILD_AUDIO_SINK=OFF -DOPT_BUILD_NETWORK_SINK=OFF -DOPT_BUILD_NEW_PORTAUDIO_SINK=OFF -DOPT_BUILD_PORTAUDIO_SINK=OFF -DOPT_BUILD_ATV_DECODER=OFF -DOPT_BUILD_DAB_DECODER=OFF -DOPT_BUILD_FALCON9_DECODER=OFF -DOPT_BUILD_KGSSTV_DECODER=OFF -DOPT_BUILD_M17_DECODER=OFF -DOPT_BUILD_METEOR_DEMODULATOR=OFF -DOPT_BUILD_PAGER_DECODER=OFF -DOPT_BUILD_RADIO=OFF -DOPT_BUILD_VOR_RECEIVER=OFF -DOPT_BUILD_WEATHER_SAT_DECODER=OFF -DOPT_BUILD_DISCORD_PRESENCE=OFF -DOPT_BUILD_FREQUENCY_MANAGER=OFF -DOPT_BUILD_IQ_EXPORTER=OFF -DOPT_BUILD_RECORDER=OFF -DOPT_BUILD_RIGCTL_CLIENT=OFF -DOPT_BUILD_RIGCTL_SERVER=OFF -DOPT_BUILD_SCANNER=OFF -DOPT_BUILD_SCHEDULER=OFF
-          cmake --build . --config Release --target sdrpp_core
-        
-      - name: Verify FFTW header exists
+        working-directory: ${{ runner.workspace }}/build_sdrpp
         shell: pwsh
-        run: Test-Path "C:\vcpkg\installed\x64-windows\include\fftw3.h"
-
-      - name: Build the better file source module
-        shell: pwsh
-        working-directory: ${{ runner.workspace }}/build_module
         run: |
-          $coreCandidates = @(
-            "$env:RUNNER_WORKSPACE\build_sdrpp\core\Release",
-            "$env:RUNNER_WORKSPACE\build_sdrpp\core\x64\Release",
-            "$env:RUNNER_WORKSPACE\build_sdrpp\Release",
-            "$env:RUNNER_WORKSPACE\build_sdrpp\x64\Release"
+          $offModules = @(
+            "AIRSPY_SOURCE","AIRSPYHF_SOURCE","AUDIO_SOURCE","BADGESDR_SOURCE","BLADERF_SOURCE","DRAGONLABS_SOURCE",
+            "FILE_SOURCE","FOBOSSDR_SOURCE","HACKRF_SOURCE","HAROGIC_SOURCE","HERMES_SOURCE","HYDRASDR_SOURCE",
+            "KCSDR_SOURCE","LIMESDR_SOURCE","NETWORK_SOURCE","PERSEUS_SOURCE","PLUTOSDR_SOURCE","RFNM_SOURCE",
+            "RFSPACE_SOURCE","RTL_SDR_SOURCE","RTL_TCP_SOURCE","SDDC_SOURCE","SDRPP_SERVER_SOURCE","SDRPLAY_SOURCE",
+            "SOAPY_SOURCE","SPECTRAN_SOURCE","SPECTRAN_HTTP_SOURCE","SPYSERVER_SOURCE","USRP_SOURCE",
+            "ANDROID_AUDIO_SINK","AUDIO_SINK","NETWORK_SINK","NEW_PORTAUDIO_SINK","PORTAUDIO_SINK",
+            "ATV_DECODER","DAB_DECODER","FALCON9_DECODER","KG_SSTV_DECODER","M17_DECODER","METEOR_DEMODULATOR",
+            "PAGER_DECODER","RADIO","RYFI_DECODER","VOR_RECEIVER","WEATHER_SAT_DECODER",
+            "DISCORD_PRESENCE","FREQUENCY_MANAGER","IQ_EXPORTER","RECORDER","RIGCTL_CLIENT","RIGCTL_SERVER","SCANNER","SCHEDULER"
           )
 
-          $coreLibDir = $coreCandidates | Where-Object { Test-Path (Join-Path $_ "sdrpp_core.lib") } | Select-Object -First 1
-          if (-not $coreLibDir) {
-            Write-Error "sdrpp_core.lib not found in expected build_sdrpp output folders."
-            Get-ChildItem "$env:RUNNER_WORKSPACE\build_sdrpp" -Recurse -Filter sdrpp_core.lib | ForEach-Object { $_.FullName }
-            exit 1
-          }
+          $cmakeArgs = @(
+            "-A", "x64",
+            "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+            "-DOPT_BACKEND_GLFW=ON",
+            "-DOPT_BACKEND_ANDROID=OFF"
+          )
+          $cmakeArgs += $offModules | ForEach-Object { "-DOPT_BUILD_$($_)=OFF" }
+          $cmakeArgs += "${{ github.workspace }}/lib/SDRPlusPlus"
 
-          $env:LIB = "$coreLibDir;C:\vcpkg\installed\x64-windows\lib;$env:LIB"
+          cmake @cmakeArgs
+          cmake --build . --config Release --target sdrpp_core --parallel 3
 
-          cmake $env:GITHUB_WORKSPACE `
-            "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" `
-            "-DSDRPP_CORE_ROOT=$env:GITHUB_WORKSPACE/lib/SDRPlusPlus" `
-            "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc"
+      - name: Build the better file source module
+        working-directory: ${{ runner.workspace }}/build_module
+        shell: pwsh
+        run: |
+          # Needed so linker can resolve both sdrpp_core.lib and volk.lib
+          $env:LIB="${{ runner.workspace }}\build_sdrpp\core\Release;C:\Program Files\PothosSDR\lib;$env:LIB"
 
-          cmake --build . --config Release --verbose
+          cmake -A x64 `
+            -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake `
+            -DSDRPP_CORE_ROOT=${{ github.workspace }}/lib/SDRPlusPlus `
+            "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc;/I${{ github.workspace }}/lib/SDRPlusPlus/core/src;/I${{ github.workspace }}/lib/SDRPlusPlus/core/src/imgui" `
+            ${{ github.workspace }}
+
+          cmake --build . --config Release --parallel 3
+
       - name: Save Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cs8_file_source_windows_x64
-          path: ${{runner.workspace}}/build_module/Release/cs8_file_source.dll
-
+          name: cs8_file_source_windows_amd64
+          path: ${{ runner.workspace }}/build_module/Release/cs8_file_source.dll
   build_macos_universal:
     strategy:
       matrix:
