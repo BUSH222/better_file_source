@@ -9,6 +9,8 @@ on:
 jobs:
   build_windows:
     runs-on: windows-latest
+    env:
+      CMAKE_INCLUDE_PATH: C:/vcpkg/installed/x64-windows/include
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,7 +42,7 @@ jobs:
       - name: Build the better file source module
         working-directory: ${{runner.workspace}}/build_module
         run: |
-          cmake ${{github.workspace}} "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc;/I\"C:/Program Files/PothosSDR/include\";/I\"${{github.workspace}}/lib/SDRPlusPlus/core/src/imgui\";/I\"C:/vcpkg/installed/x64-windows/include\""
+          cmake ${{github.workspace}} "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_INCLUDE_PATH="${env:CMAKE_INCLUDE_PATH}" -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc"
           cmake --build . --config Release
 
       - name: Save Artifact
