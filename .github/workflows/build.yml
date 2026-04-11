@@ -70,17 +70,35 @@ jobs:
         working-directory: ${{ runner.workspace }}/build_module
         shell: pwsh
         run: |
-          # Needed so linker can resolve both sdrpp_core.lib and volk.lib
-          $env:LIB="${{ runner.workspace }}\build_sdrpp\core\Release;C:\Program Files\PothosSDR\lib;$env:LIB"
-          # Needed so headers pulled in by SDR++ core are visible to module compilation.
-          $env:INCLUDE="C:\vcpkg\installed\x64-windows\include;C:\Program Files\PothosSDR\include;$env:INCLUDE"
+          $coreImportLib = Get-ChildItem -Path "${{ runner.workspace }}/build_sdrpp" -Recurse -Filter "sdrpp_core.lib" | Select-Object -First 1
+          if (-not $coreImportLib) {
+            throw "Could not find sdrpp_core.lib under ${{ runner.workspace }}/build_sdrpp"
+          }
+          $coreLibDir = $coreImportLib.DirectoryName.Replace('\\', '/')
 
-          cmake -A x64 `
-            -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake `
-            -DCMAKE_PREFIX_PATH=C:/vcpkg/installed/x64-windows `
-            -DSDRPP_CORE_ROOT=${{ github.workspace }}/lib/SDRPlusPlus `
-            "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc;/IC:/vcpkg/installed/x64-windows/include;/I${{ github.workspace }}/lib/SDRPlusPlus/core/src;/I${{ github.workspace }}/lib/SDRPlusPlus/core/src/imgui" `
-            ${{ github.workspace }}
+          $coreDll = Get-ChildItem -Path "${{ runner.workspace }}/build_sdrpp" -Recurse -Filter "sdrpp_core.dll" | Select-Object -First 1
+          $coreDllDir = ""
+          if ($coreDll) {
+            $coreDllDir = $coreDll.DirectoryName.Replace('\\', '/')
+          }
+
+          Write-Host "Using sdrpp_core import lib: $($coreImportLib.FullName)"
+
+          $cmakeArgs = @(
+            "-A", "x64",
+            "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+            "-DCMAKE_PREFIX_PATH=C:/vcpkg/installed/x64-windows",
+            "-DSDRPP_CORE_ROOT=${{ github.workspace }}/lib/SDRPlusPlus",
+            "-DSDRPP_CORE_LIB_DIR=$coreLibDir",
+            "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc;/IC:/vcpkg/installed/x64-windows/include;/I${{ github.workspace }}/lib/SDRPlusPlus/core/src;/I${{ github.workspace }}/lib/SDRPlusPlus/core/src/imgui"
+          )
+
+          if ($coreDllDir -ne "") {
+            $cmakeArgs += "-DSDRPP_CORE_DLL_DIR=$coreDllDir"
+          }
+
+          $cmakeArgs += "${{ github.workspace }}"
+          cmake @cmakeArgs
 
           cmake --build . --config Release --parallel 3
 
