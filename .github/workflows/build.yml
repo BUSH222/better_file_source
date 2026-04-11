@@ -40,7 +40,7 @@ jobs:
       - name: Build the better file source module
         working-directory: ${{runner.workspace}}/build_module
         run: |
-          cmake ${{github.workspace}} "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc"
+          cmake ${{github.workspace}} "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc;/I\"C:/Program Files/PothosSDR/include\";/I\"${{github.workspace}}/lib/SDRPlusPlus/core/src/imgui\""
           cmake --build . --config Release
 
       - name: Save Artifact
@@ -87,8 +87,8 @@ jobs:
         working-directory: ${{runner.workspace}}/build_module
         run: |
           export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
-          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=-O3;-std=c++17"
-          make -j3
+          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=-O3;-std=c++17;-I/opt/homebrew/include;-I/usr/local/include;-I${{github.workspace}}/lib/SDRPlusPlus/core/src/imgui"
+          make VERBOSE=1 -j3
 
       - name: Save Artifact
         uses: actions/upload-artifact@v4
