@@ -221,7 +221,7 @@ private:
             while (true) {
                 _this->reader->readSamples(inBuf, blockSize * 2 * sizeof(uint8_t));
                 for (int i = 0; i < blockSize * 2; i++) {
-                    ((float*)_this->stream.writeBuf)[i] = ((float)inBuf[i] - 128.0f) / 128.0f;
+                    ((float*)_this->stream.writeBuf)[i] = ((float)inBuf[i] - 127.0f) / 128.0f;
                 }
                 if (!_this->stream.swap(blockSize)) { break; };
             }
@@ -241,7 +241,7 @@ private:
             while (true) {
                 _this->reader->readSamples(inBuf, blockSize * 2 * sizeof(uint16_t));
                 for (int i = 0; i < blockSize * 2; i++) {
-                    ((float*)_this->stream.writeBuf)[i] = ((float)inBuf[i] - 32768.0f) / 32768.0f;
+                    ((float*)_this->stream.writeBuf)[i] = ((float)inBuf[i] - 32767.0f) / 32768.0f;
                 }
                 if (!_this->stream.swap(blockSize)) { break; };
             }
@@ -261,7 +261,7 @@ private:
             while (true) {
                 _this->reader->readSamples(inBuf, blockSize * 2 * sizeof(uint32_t));
                 for (int i = 0; i < blockSize * 2; i++) {
-                    ((float*)_this->stream.writeBuf)[i] = ((float)inBuf[i] - 2147483648.0f) / 2147483648.0f;
+                    ((float*)_this->stream.writeBuf)[i] = ((float)inBuf[i] - 2147483647.0f) / 2147483648.0f;
                 }
                 if (!_this->stream.swap(blockSize)) { break; };
             }
