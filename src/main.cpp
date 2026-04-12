@@ -195,7 +195,7 @@ private:
         BetterFileSourceModule* _this = (BetterFileSourceModule*)ctx;
         double sampleRate = std::max(_this->sampleRate, MIN_SAMPLE_RATE);
         int blockSize = std::min((int)(sampleRate / 200.0f), (int)STREAM_BUFFER_SIZE);
-        SampleType type = _this->sampleTypes.key(_this->sampleTypeId);
+        SampleType type = (SampleType)_this->sampleTypes.key(_this->sampleTypeId);
 
         if (type == SAMP_TYPE_CS8) {
             int8_t* inBuf = new int8_t[blockSize * 2];
