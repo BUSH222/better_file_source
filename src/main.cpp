@@ -20,8 +20,13 @@
 
 enum SampleType {
     SAMP_TYPE_CS8,
+    SAMP_TYPE_CU8,
     SAMP_TYPE_CS16,
-    SAMP_TYPE_CS32
+    SAMP_TYPE_CU16,
+    SAMP_TYPE_CS32,
+    SAMP_TYPE_CU32,
+    SAMP_TYPE_CF32,
+    
 };
 
 SDRPP_MOD_INFO{
@@ -36,12 +41,17 @@ ConfigManager config;
 
 class BetterFileSourceModule : public ModuleManager::Instance {
 public:
-    BetterFileSourceModule(std::string name) : fileSelect("", { "IQ Files", "*.cs8 *.c8 *.cs16 *.c16 *.cs32 *.c32 *.raw", "All Files", "*" }) {
+    BetterFileSourceModule(std::string name) : fileSelect("", { "IQ Files", "*.cs8 *.cu8 *.c8 *.cs16 *.cu16 *.c16 *.cs32 *.cu32 *.c32 *.cf32 *.raw", "All Files", "*" }) {
         this->name = name;
 
         sampleTypes.define(SAMP_TYPE_CS8, "CS8", SAMP_TYPE_CS8);
+        sampleTypes.define(SAMP_TYPE_CU8, "CU8", SAMP_TYPE_CU8);
         sampleTypes.define(SAMP_TYPE_CS16, "CS16", SAMP_TYPE_CS16);
+        sampleTypes.define(SAMP_TYPE_CU16, "CU16", SAMP_TYPE_CU16);
         sampleTypes.define(SAMP_TYPE_CS32, "CS32", SAMP_TYPE_CS32);
+        sampleTypes.define(SAMP_TYPE_CU32, "CU32", SAMP_TYPE_CU32);
+        sampleTypes.define(SAMP_TYPE_CF32, "CF32", SAMP_TYPE_CF32);
+
 
         if (core::args["server"].b()) { return; }
 
@@ -66,12 +76,12 @@ public:
         handler.stopHandler = stop;
         handler.tuneHandler = tune;
         handler.stream = &stream;
-        sigpath::sourceManager.registerSource("Better File", &handler);
+        sigpath::sourceManager.registerSource("Better File Source", &handler);
     }
 
     ~BetterFileSourceModule() {
         stop(this);
-        sigpath::sourceManager.unregisterSource("Better File");
+        sigpath::sourceManager.unregisterSource("Better File Source");
     }
 
     void postInit() {}
@@ -206,11 +216,33 @@ private:
             }
             delete[] inBuf;
         }
+        else if (type == SAMP_TYPE_CU8) {
+            uint8_t* inBuf = new uint8_t[blockSize * 2];
+            while (true) {
+                _this->reader->readSamples(inBuf, blockSize * 2 * sizeof(uint8_t));
+                for (int i = 0; i < blockSize * 2; i++) {
+                    ((float*)_this->stream.writeBuf)[i] = ((float)inBuf[i] - 128.0f) / 128.0f;
+                }
+                if (!_this->stream.swap(blockSize)) { break; };
+            }
+            delete[] inBuf;
+        }
         else if (type == SAMP_TYPE_CS16) {
             int16_t* inBuf = new int16_t[blockSize * 2];
             while (true) {
                 _this->reader->readSamples(inBuf, blockSize * 2 * sizeof(int16_t));
                 volk_16i_s32f_convert_32f((float*)_this->stream.writeBuf, inBuf, 32768.0f, blockSize * 2);
+                if (!_this->stream.swap(blockSize)) { break; };
+            }
+            delete[] inBuf;
+        }
+        else if (type == SAMP_TYPE_CU16) {
+            uint16_t* inBuf = new uint16_t[blockSize * 2];
+            while (true) {
+                _this->reader->readSamples(inBuf, blockSize * 2 * sizeof(uint16_t));
+                for (int i = 0; i < blockSize * 2; i++) {
+                    ((float*)_this->stream.writeBuf)[i] = ((float)inBuf[i] - 32768.0f) / 32768.0f;
+                }
                 if (!_this->stream.swap(blockSize)) { break; };
             }
             delete[] inBuf;
@@ -223,6 +255,23 @@ private:
                 if (!_this->stream.swap(blockSize)) { break; };
             }
             delete[] inBuf;
+        }
+        else if (type == SAMP_TYPE_CU32) {
+            uint32_t* inBuf = new uint32_t[blockSize * 2];
+            while (true) {
+                _this->reader->readSamples(inBuf, blockSize * 2 * sizeof(uint32_t));
+                for (int i = 0; i < blockSize * 2; i++) {
+                    ((float*)_this->stream.writeBuf)[i] = ((float)inBuf[i] - 2147483648.0f) / 2147483648.0f;
+                }
+                if (!_this->stream.swap(blockSize)) { break; };
+            }
+            delete[] inBuf;
+        }
+        else if (type == SAMP_TYPE_CF32) {
+            while (true) {
+                _this->reader->readSamples(_this->stream.writeBuf, blockSize * sizeof(dsp::complex_t));
+                if (!_this->stream.swap(blockSize)) { break; };
+            }
         }
     }
 
