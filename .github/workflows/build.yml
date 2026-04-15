@@ -199,6 +199,8 @@ jobs:
     needs: [build_windows, build_macos_universal, build_linux]
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    permissions:
+      contents: write
 
     steps:
       - name: Download All Builds
