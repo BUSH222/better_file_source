@@ -2,16 +2,15 @@ name: Build Module
 
 on:
   push:
-    branches: [ "master", "main" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "master", "main" ]
+    branches: [ "main" ]
 
 jobs:
   build_windows:
-    # if: ${{ false }}  # takes too long for now ill turn back on later
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -104,7 +103,7 @@ jobs:
           cmake --build . --config Release --parallel 3
 
       - name: Save Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: better_file_source_windows_amd64
           path: ${{ runner.workspace }}/build_module/Release/better_file_source.dll
@@ -114,7 +113,7 @@ jobs:
         os: [macos-15-intel, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -150,7 +149,7 @@ jobs:
           make VERBOSE=1 -j3
 
       - name: Save Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: better_file_source_${{ matrix.os }}
           path: ${{runner.workspace}}/build_module/better_file_source.dylib
@@ -158,7 +157,7 @@ jobs:
   build_linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -191,7 +190,21 @@ jobs:
           make -j3
 
       - name: Save Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: better_file_source_linux_amd64
           path: ${{runner.workspace}}/build_module/better_file_source.so
+
+  update_latest_release:
+    needs: [build_windows, build_macos_universal, build_linux]
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+
+    steps:
+      - name: Download All Builds
+        uses: actions/download-artifact@v8
+
+      - name: Update Latest Release
+        run: gh release upload latest --clobber -R ${{github.repository}} better_file_source_windows_amd64/* better_file_source_macos-15-intel/* better_file_source_macos-15/* better_file_source_linux_amd64/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
