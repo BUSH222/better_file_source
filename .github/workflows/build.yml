@@ -207,6 +207,12 @@ jobs:
         uses: actions/download-artifact@v8
 
       - name: Update Latest Release
-        run: gh release upload latest --clobber -R ${{github.repository}} better_file_source_windows_amd64/* better_file_source_macos-15-intel/* better_file_source_macos-15/* better_file_source_linux_amd64/*
+        run: |
+          mkdir release_files
+          cp better_file_source_windows_amd64/* release_files/better_file_source_windows_amd64.dll
+          cp better_file_source_macos-15-intel/* release_files/better_file_source_macos-15-intel.dylib
+          cp better_file_source_macos-15/* release_files/better_file_source_macos-15.dylib
+          cp better_file_source_linux_amd64/* release_files/better_file_source_linux_amd64.so
+          gh release upload latest --clobber -R ${{github.repository}} release_files/*
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
